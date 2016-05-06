@@ -4,6 +4,19 @@
     sed -r 's/^([ ]{4}|\t)//g' <<USAGE
     pdns - the dead simple tool for working with remote pdns server.
 
+    Work with remote pdns server requires establishing database connection,
+        so you must create configuration file with following syntax:
+
+            host="database hostname"
+            name="database name"
+            user="database user"
+            password="database password"
+
+        and place it as ~/.config/pdns
+
+    WARNING! It is beta version, use dry run mode (-r flag) before executing
+        high risk queries (remove, update).
+
     Usage:
         pdns <command> [command-options]
 
