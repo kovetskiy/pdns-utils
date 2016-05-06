@@ -1,0 +1,46 @@
+#!/bin/bash
+
+:usage() {
+    sed -r 's/^([ ]{4}|\t)//g' <<USAGE
+    pdns - the dead simple tool for working with remote pdns server.
+
+    Usage:
+        pdns <command> [command-options]
+
+    Commands:
+        records    work with dns records
+USAGE
+}
+
+:main() {
+    local _lib=$(dirname "$(readlink -f "$0")")/lib
+
+    if [ $# -eq 0 ]; then
+        :usage
+        exit 0
+    fi
+
+    if _command=$(:command_exists "$1"); then
+        shift
+        "$_command" "$@"
+        exit $?
+    fi
+
+    echo "unknown command" >&2
+    exit 1
+}
+
+:command_exists() {
+    local command_name="$1"
+    if [ -f "$_lib/pdns-$command_name" ]; then
+        echo "$_lib/pdns-$command_name"
+        return 0
+    elif [ -f "/usr/lib/pdns/pdns-$command_name" ]; then
+        echo "/usr/lib/pdns/pdns-$command_name"
+        return 0
+    else
+        return 1
+    fi
+}
+
+:main "$@"

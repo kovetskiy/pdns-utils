@@ -1,0 +1,105 @@
+#!/bin/bash
+
+set -euo pipefail
+
+:usage() {
+    sed -r 's/^([ ]{4}|\t)//g' <<USAGE
+    pdns records remove
+
+    Usage:
+        pdns records remove (-n <name> | -c <content>) [-t <type>] [-r]
+        pdns records remove -h
+
+    Options:
+        -n <name>      Specify record name.
+        -t <type>      Specify record type (example: CNAME).
+        -c <content>   Specify record content (address).
+        -r             Dry run.
+        -h             Show this screen.
+USAGE
+}
+
+:main() {
+    local content=""
+    local name=""
+    local type=""
+
+    local dryrun=false
+
+    while getopts ":c:n:t:r" key; do
+        case "$key" in
+            c)
+                content="$OPTARG"
+                ;;
+
+            n)
+                name="$OPTARG"
+                ;;
+
+            t)
+                type="$OPTARG"
+                ;;
+
+            r)
+                dryrun=true
+                ;;
+
+            h)
+                :usage
+                exit 0
+                ;;
+        esac
+    done
+    local OPTIND # reset options
+
+    (
+        :source_config
+        true $user $host $password $name
+    )
+
+    if [ ! "$content" ] && [ ! "$name" ]; then
+        :usage
+        exit 1
+    fi
+
+    local query="DELETE FROM records WHERE 1"
+
+    if [ "$name" ]; then
+        query="$query AND name = '$name'"
+    fi
+
+    if [ "$content" ]; then
+        query="$query AND content = '$content'"
+    fi
+
+    if [ "$type" ]; then
+        query="$query AND type = '$type'"
+    fi
+
+    if $dryrun; then
+        :log "$query"
+        :log "dry run mode, exiting"
+        exit 0
+    else
+        :execute "$query"
+    fi
+}
+
+:log() {
+    echo "[$(date -Iseconds | cut -dT -f1)] $*" >&2
+}
+
+:source_config() {
+    source ~/.config/pdns
+}
+
+:execute() {
+    local query="$1"
+
+    (
+        :source_config
+        mysql -h"$host" -u"$user" -p"$password" "$name" -vv <<< "$query"
+    )
+}
+
+:main "$@"

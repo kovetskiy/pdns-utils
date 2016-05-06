@@ -1,0 +1,112 @@
+#!/bin/bash
+
+set -euo pipefail
+
+:usage() {
+    sed -r 's/^([ ]{4}|\t)//g' <<USAGE
+    pdns-records-list
+
+    Usage:
+        pdns records list [options]
+        pdns records list -h
+
+    Options:
+        -c <content>   Specify record content to search.
+        -n <name>      Specify record name to search.
+        -t <type>      Specify record type to search.
+        -r             Dry run.
+        -x             Display output as table.
+        -h             Show this screen.
+USAGE
+}
+
+:main() {
+    local content=""
+    local name=""
+    local type=""
+
+    local table_mode=false
+    local dryrun=false
+
+    while getopts ":c:n:t:xr" key; do
+        case "$key" in
+            c)
+                content="$OPTARG"
+                ;;
+
+            n)
+                name="$OPTARG"
+                ;;
+
+            t)
+                type="$OPTARG"
+                ;;
+
+            x)
+                table_mode=true
+                ;;
+
+            r)
+                dryrun=true
+                ;;
+
+            h)
+                :usage
+                exit 0
+                ;;
+        esac
+    done
+    local OPTIND # reset options
+
+    (
+        :source_config
+        true $user $host $password $name
+    )
+
+    local query="SELECT name, type, content, domain_id FROM records WHERE 1"
+
+    if [ "$content" ]; then
+        query="$query AND content LIKE '$content'"
+    fi
+
+    if [ "$name" ]; then
+        query="$query AND name LIKE '$name'"
+    fi
+
+    if [ "$type" ]; then
+        query="$query AND type LIKE '$type'"
+    fi
+
+
+    if $dryrun; then
+        :log "$query"
+        :log "dry run mode, exiting"
+        exit 0
+    else
+        :execute "$query"
+    fi
+}
+
+:log() {
+    echo "[$(date -Iseconds | cut -dT -f1)] $*" >&2
+}
+
+:source_config() {
+    source ~/.config/pdns
+}
+
+:execute() {
+    local query="$1"
+
+    local flags="-N"
+    if $table_mode; then
+        flags="-t"
+    fi
+
+    (
+        :source_config
+        mysql -h"$host" -u"$user" -p"$password" "$name" $flags <<< "$query"
+    )
+}
+
+:main "$@"
