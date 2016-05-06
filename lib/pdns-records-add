@@ -86,6 +86,7 @@ USAGE
         :execute "$query"
     fi
 }
+
 :execute() {
     local query="$1"
 
@@ -94,5 +95,10 @@ USAGE
         mysql -h"$host" -u"$user" -p"$password" "$name" -vv <<< "$query"
     )
 }
+
+:source_config() {
+    source ~/.config/pdns
+}
+
 
 :main "$@"
