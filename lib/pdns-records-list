@@ -28,7 +28,7 @@ USAGE
     local table_mode=false
     local dryrun=false
 
-    while getopts ":c:n:t:xr" key; do
+    while getopts ":c:n:t:xrh" key; do
         case "$key" in
             c)
                 content="$OPTARG"
