@@ -87,6 +87,10 @@ USAGE
     fi
 }
 
+:log() {
+    echo "[$(date -Iseconds | cut -dT -f1)] $*" >&2
+}
+
 :execute() {
     local query="$1"
 
