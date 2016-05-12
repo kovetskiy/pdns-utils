@@ -79,7 +79,7 @@ USAGE
 }
 
 :log() {
-    echo "[$(date -Iseconds | cut -dT -f1)] $*" >&2
+    echo "[$(date -Iseconds | cut -dT -f2)] $*" >&2
 }
 
 :source_config() {
