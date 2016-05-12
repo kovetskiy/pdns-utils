@@ -22,6 +22,7 @@
 
     Commands:
         records    work with dns records
+        soa        work with dns SOA records
 USAGE
 }
 

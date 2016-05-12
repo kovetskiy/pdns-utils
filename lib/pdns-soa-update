@@ -1,0 +1,98 @@
+#!/bin/bash
+
+set -euo pipefail
+
+:usage() {
+    sed -r 's/^([ ]{4}|\t)//g' <<USAGE
+    pdns soa update
+
+    Usage:
+        pdns soa update -n <name> [-r]
+        pdns soa update -h
+
+    Options:
+        -n <name>      Specify domain zone.
+        -r             Dry run.
+        -h             Show this screen.
+USAGE
+}
+
+:main() {
+    local name=""
+
+    local dryrun=false
+
+    while getopts ":n:rh" key; do
+        case "$key" in
+            n)
+                name="$OPTARG"
+                ;;
+
+            r)
+                dryrun=true
+                ;;
+
+            h)
+                :usage
+                exit 0
+                ;;
+        esac
+    done
+    local OPTIND # reset options
+
+    if [ ! "$name" ]; then
+        :usage
+        exit 1
+    fi
+
+    (
+        :source_config
+        true $user $host $password $name
+    )
+
+    local content=$(pdns records list -n "$name" -t SOA -f content)
+    local serial=$(awk '{print $3}' <<< "$content")
+
+    :log "soa record: $content"
+    :log "serial number: $serial"
+
+    if grep -qP '[^\d]' <<< "$serial"; then
+        :log "SOA serial number doesn't look like serial number (non-numeric)"
+        exit 1
+    fi
+
+    content=${content/$serial/$(date +%s)}
+
+    :log "new soa record: $content"
+
+    local query="UPDATE records"
+    query="${query} SET content='$content'"
+    query="${query} WHERE name='$name' AND type='SOA'"
+
+    if $dryrun; then
+        :log "$query"
+        :log "dry run mode, exiting"
+        exit 0
+    else
+        :execute "$query"
+    fi
+}
+
+:log() {
+    echo "[$(date -Iseconds | cut -dT -f1)] $*" >&2
+}
+
+:source_config() {
+    source ~/.config/pdns
+}
+
+:execute() {
+    local query="$1"
+
+    (
+        :source_config
+        mysql -h"$host" -u"$user" -p"$password" "$name" -vv <<< "$query"
+    )
+}
+
+:main "$@"

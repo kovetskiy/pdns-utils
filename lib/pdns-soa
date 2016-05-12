@@ -1,0 +1,43 @@
+#!/bin/bash
+
+:usage() {
+    sed -r 's/^([ ]{4}|\t)//g' <<USAGE
+    pdns soa - working with pdns soa records
+
+    Usage:
+        pdns soa <command> [command-options]
+
+    Commands:
+        update     Update specified SOA record serial number.
+USAGE
+}
+
+:main() {
+    local _lib=$(dirname "$(readlink -f "$0")")
+
+    if [ $# -eq 0 ]; then
+        :usage
+        exit 0
+    fi
+
+    if _command=$(:command_exists "$1"); then
+        shift
+        "$_command" "$@"
+        exit $?
+    fi
+
+    echo "unknown command" >&2
+    exit 1
+}
+
+:command_exists() {
+    local command_name="$1"
+    if [ -f "$_lib/pdns-soa-$command_name" ]; then
+        echo "$_lib/pdns-soa-$command_name"
+        return 0
+    else
+        return 1
+    fi
+}
+
+:main "$@"
