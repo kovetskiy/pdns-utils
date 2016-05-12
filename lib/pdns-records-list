@@ -14,6 +14,7 @@ set -euo pipefail
         -c <content>   Specify record content to search.
         -n <name>      Specify record name to search.
         -t <type>      Specify record type to search.
+        -f <fields>    Specify fields to show.
         -r             Dry run.
         -x             Display output as table.
         -h             Show this screen.
@@ -24,11 +25,12 @@ USAGE
     local content=""
     local name=""
     local type=""
+    local fields="name, type, content, domain_id"
 
     local table_mode=false
     local dryrun=false
 
-    while getopts ":c:n:t:xrh" key; do
+    while getopts ":c:n:t:f:xrh" key; do
         case "$key" in
             c)
                 content="$OPTARG"
@@ -40,6 +42,10 @@ USAGE
 
             t)
                 type="$OPTARG"
+                ;;
+
+            f)
+                fields="$OPTARG"
                 ;;
 
             x)
@@ -63,7 +69,7 @@ USAGE
         true $user $host $password $name
     )
 
-    local query="SELECT name, type, content, domain_id FROM records WHERE 1"
+    local query="SELECT $fields FROM records WHERE 1"
 
     if [ "$content" ]; then
         query="$query AND content LIKE '$content'"
