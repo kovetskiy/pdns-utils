@@ -7,7 +7,7 @@ set -euo pipefail
     pdns records add
 
     Usage:
-        pdns records add -n <name> -t <type> -c <content> -d <domain_id> [-r]
+        pdns records add -n <name> -t <type> -c <content> -d <domain_id> -l <ttl> [-r]
         pdns records add -h
 
     Options:
@@ -15,6 +15,7 @@ set -euo pipefail
         -t <type>      Specify record type (example: CNAME).
         -c <content>   Specify record content (address).
         -d <domain_id> Specify record domain id.
+        -l <ttl>       Specify record ttl.
         -r             Dry run.
         -h             Show this screen.
 USAGE
@@ -25,10 +26,11 @@ USAGE
     local name=""
     local type=""
     local domain_id=""
+    local ttl=""
 
     local dryrun=false
 
-    while getopts ":c:n:t:d:rh" key; do
+    while getopts ":c:n:l:t:d:rh" key; do
         case "$key" in
             c)
                 content="$OPTARG"
@@ -40,6 +42,10 @@ USAGE
 
             t)
                 type="$OPTARG"
+                ;;
+
+            l)
+                ttl="$OPTARG"
                 ;;
 
             d)
@@ -76,6 +82,7 @@ USAGE
     query="$query, content = '$content'"
     query="$query, type = '$type'"
     query="$query, domain_id = $domain_id"
+    query="$query, ttl = '$ttl'"
 
 
     if $dryrun; then
