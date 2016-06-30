@@ -1,0 +1,44 @@
+#!/bin/bash
+
+:usage() {
+    sed -r 's/^([ ]{4}|\t)//g' <<USAGE
+    pdns domains - working with pdns domains
+
+    Usage:
+        pdns domains <command> [command-options]
+
+    Commands:
+        list     List pdns domains using specified filter.
+USAGE
+}
+
+:main() {
+    local _lib=$(dirname "$(readlink -f "$0")")
+
+    if [ $# -eq 0 ]; then
+        :usage
+        exit 0
+    fi
+
+    if _command=$(:command_exists "$1"); then
+        shift
+        "$_command" "$@"
+        exit $?
+    fi
+
+    echo "unknown command" >&2
+    exit 1
+}
+
+:command_exists() {
+    local command_name="$1"
+    if [ -f "$_lib/pdns-domains-$command_name" ]; then
+        echo "$_lib/pdns-domains-$command_name"
+        return 0
+    else
+        return 1
+    fi
+}
+
+:main "$@"
+
