@@ -21,8 +21,9 @@
         pdns <command> [command-options]
 
     Commands:
-        records    work with dns records
-        soa        work with dns SOA records
+        domains    work with DNS domains
+        records    work with DNS records
+        soa        work with DNS SOA records
 USAGE
 }
 

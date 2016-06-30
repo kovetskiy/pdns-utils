@@ -1,0 +1,107 @@
+#!/bin/bash
+
+set -euo pipefail
+
+:usage() {
+    sed -r 's/^([ ]{4}|\t)//g' <<USAGE
+    pdns-domains-list
+
+    Usage:
+        pdns domains list [options]
+        pdns domains list -h
+
+    Options:
+        -t             Display only top-level domains.
+        -n <name>      Specify domain name to search.
+        -f <fields>    Specify fields to show.
+        -r             Dry run.
+        -x             Display output as table.
+        -h             Show this screen.
+USAGE
+}
+
+:main() {
+    local name=""
+    local type=""
+    local fields="id, name, master"
+
+    local table_mode=false
+    local dryrun=false
+    local top_level=false
+
+    while getopts ":n:tf:xrh" key; do
+        case "$key" in
+            t)
+                top_level=true
+                ;;
+            n)
+                name="$OPTARG"
+                ;;
+
+            f)
+                fields="$OPTARG"
+                ;;
+
+            x)
+                table_mode=true
+                ;;
+
+            r)
+                dryrun=true
+                ;;
+
+            h)
+                :usage
+                exit 0
+                ;;
+        esac
+    done
+    local OPTIND # reset options
+
+    (
+        :source_config
+        true $user $host $password $name
+    )
+
+    local query="SELECT $fields FROM domains WHERE 1"
+
+    if [ "$name" ]; then
+        query="$query AND name LIKE '$name'"
+    fi
+
+    if $top_level; then
+        query="$query AND length(name) = 1"
+    fi
+
+    if $dryrun; then
+        :log "$query"
+        :log "dry run mode, exiting"
+        exit 0
+    else
+        :execute "$query"
+    fi
+}
+
+:log() {
+    echo "[$(date -Iseconds | cut -dT -f2)] $*" >&2
+}
+
+:source_config() {
+    source ~/.config/pdns
+}
+
+:execute() {
+    local query="$1"
+
+    local flags="-N"
+    if $table_mode; then
+        flags="-t"
+    fi
+
+    (
+        :source_config
+        mysql -h"$host" -u"$user" -p"$password" "$name" $flags <<< "$query"
+    )
+}
+
+:main "$@"
